@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Tanzania Water Pumps | Carruza blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Tanzania Water Pumps" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Pump it Up: Data Mining the Water Table" />
+<meta property="og:description" content="Pump it Up: Data Mining the Water Table" />
+<link rel="canonical" href="http://localhost:4000/jekyll/update/2020/05/04/DataDriven.html" />
+<meta property="og:url" content="http://localhost:4000/jekyll/update/2020/05/04/DataDriven.html" />
+<meta property="og:site_name" content="Carruza blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-05-04T10:03:38-03:00" />
+<script type="application/ld+json">
+{"description":"Pump it Up: Data Mining the Water Table","@type":"BlogPosting","url":"http://localhost:4000/jekyll/update/2020/05/04/DataDriven.html","headline":"Tanzania Water Pumps","dateModified":"2020-05-04T10:03:38-03:00","datePublished":"2020-05-04T10:03:38-03:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/jekyll/update/2020/05/04/DataDriven.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Carruza blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Carruza blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Tanzania Water Pumps</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-05-04T10:03:38-03:00" itemprop="datePublished">May 4, 2020
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h1 id="pump-it-up-data-mining-the-water-table">Pump it Up: Data Mining the Water Table</h1>
+
+<p><em>Using data from Taarifa and the Tanzanian Ministry of Water, we predict which pumps are functional, which need some repairs, and which don’t work at all. Here, we predict one of these three classes based on a number of variables about what kind of pump is operating, when it was installed, and how it is managed. A smart understanding of which waterpoints will fail can improve maintenance operations and ensure that clean, potable water is available to communities across Tanzania. This is an intermediate-level practice competition.</em></p>
+
+<p>https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">pd</span><span class="p">.</span><span class="n">set_option</span><span class="p">(</span><span class="s">'display.max_columns'</span><span class="p">,</span><span class="mi">999</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">'TrainingValues.csv'</span><span class="p">,</span> <span class="n">index_col</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">'TrainingLabels.csv'</span><span class="p">,</span> <span class="n">index_col</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(59400, 39)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train</span><span class="p">.</span><span class="n">head</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>amount_tsh</th>
+      <th>date_recorded</th>
+      <th>funder</th>
+      <th>gps_height</th>
+      <th>installer</th>
+      <th>longitude</th>
+      <th>latitude</th>
+      <th>wpt_name</th>
+      <th>num_private</th>
+      <th>basin</th>
+      <th>subvillage</th>
+      <th>region</th>
+      <th>region_code</th>
+      <th>district_code</th>
+      <th>lga</th>
+      <th>ward</th>
+      <th>population</th>
+      <th>public_meeting</th>
+      <th>recorded_by</th>
+      <th>scheme_management</th>
+      <th>scheme_name</th>
+      <th>permit</th>
+      <th>construction_year</th>
+      <th>extraction_type</th>
+      <th>extraction_type_group</th>
+      <th>extraction_type_class</th>
+      <th>management</th>
+      <th>management_group</th>
+      <th>payment</th>
+      <th>payment_type</th>
+      <th>water_quality</th>
+      <th>quality_group</th>
+      <th>quantity</th>
+      <th>quantity_group</th>
+      <th>source</th>
+      <th>source_type</th>
+      <th>source_class</th>
+      <th>waterpoint_type</th>
+      <th>waterpoint_type_group</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>69572</th>
+      <td>6000.0</td>
+      <td>2011-03-14</td>
+      <td>Roman</td>
+      <td>1390</td>
+      <td>Roman</td>
+      <td>34.938093</td>
+      <td>-9.856322</td>
+      <td>none</td>
+      <td>0</td>
+      <td>Lake Nyasa</td>
+      <td>Mnyusi B</td>
+      <td>Iringa</td>
+      <td>11</td>
+      <td>5</td>
+      <td>Ludewa</td>
+      <td>Mundindi</td>
+      <td>109</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>Roman</td>
+      <td>False</td>
+      <td>1999</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>pay annually</td>
+      <td>annually</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>enough</td>
+      <td>enough</td>
+      <td>spring</td>
+      <td>spring</td>
+      <td>groundwater</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>8776</th>
+      <td>0.0</td>
+      <td>2013-03-06</td>
+      <td>Grumeti</td>
+      <td>1399</td>
+      <td>GRUMETI</td>
+      <td>34.698766</td>
+      <td>-2.147466</td>
+      <td>Zahanati</td>
+      <td>0</td>
+      <td>Lake Victoria</td>
+      <td>Nyamara</td>
+      <td>Mara</td>
+      <td>20</td>
+      <td>2</td>
+      <td>Serengeti</td>
+      <td>Natta</td>
+      <td>280</td>
+      <td>NaN</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>Other</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>2010</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>wug</td>
+      <td>user-group</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>insufficient</td>
+      <td>insufficient</td>
+      <td>rainwater harvesting</td>
+      <td>rainwater harvesting</td>
+      <td>surface</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>34310</th>
+      <td>25.0</td>
+      <td>2013-02-25</td>
+      <td>Lottery Club</td>
+      <td>686</td>
+      <td>World vision</td>
+      <td>37.460664</td>
+      <td>-3.821329</td>
+      <td>Kwa Mahundi</td>
+      <td>0</td>
+      <td>Pangani</td>
+      <td>Majengo</td>
+      <td>Manyara</td>
+      <td>21</td>
+      <td>4</td>
+      <td>Simanjiro</td>
+      <td>Ngorika</td>
+      <td>250</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>Nyumba ya mungu pipe scheme</td>
+      <td>True</td>
+      <td>2009</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>pay per bucket</td>
+      <td>per bucket</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>enough</td>
+      <td>enough</td>
+      <td>dam</td>
+      <td>dam</td>
+      <td>surface</td>
+      <td>communal standpipe multiple</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>67743</th>
+      <td>0.0</td>
+      <td>2013-01-28</td>
+      <td>Unicef</td>
+      <td>263</td>
+      <td>UNICEF</td>
+      <td>38.486161</td>
+      <td>-11.155298</td>
+      <td>Zahanati Ya Nanyumbu</td>
+      <td>0</td>
+      <td>Ruvuma / Southern Coast</td>
+      <td>Mahakamani</td>
+      <td>Mtwara</td>
+      <td>90</td>
+      <td>63</td>
+      <td>Nanyumbu</td>
+      <td>Nanyumbu</td>
+      <td>58</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>1986</td>
+      <td>submersible</td>
+      <td>submersible</td>
+      <td>submersible</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>dry</td>
+      <td>dry</td>
+      <td>machine dbh</td>
+      <td>borehole</td>
+      <td>groundwater</td>
+      <td>communal standpipe multiple</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>19728</th>
+      <td>0.0</td>
+      <td>2011-07-13</td>
+      <td>Action In A</td>
+      <td>0</td>
+      <td>Artisan</td>
+      <td>31.130847</td>
+      <td>-1.825359</td>
+      <td>Shuleni</td>
+      <td>0</td>
+      <td>Lake Victoria</td>
+      <td>Kyanyamisa</td>
+      <td>Kagera</td>
+      <td>18</td>
+      <td>1</td>
+      <td>Karagwe</td>
+      <td>Nyakasimbi</td>
+      <td>0</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>0</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>other</td>
+      <td>other</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>seasonal</td>
+      <td>seasonal</td>
+      <td>rainwater harvesting</td>
+      <td>rainwater harvesting</td>
+      <td>surface</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>['amount_tsh',
+ 'date_recorded',
+ 'funder',
+ 'gps_height',
+ 'installer',
+ 'longitude',
+ 'latitude',
+ 'wpt_name',
+ 'num_private',
+ 'basin',
+ 'subvillage',
+ 'region',
+ 'region_code',
+ 'district_code',
+ 'lga',
+ 'ward',
+ 'population',
+ 'public_meeting',
+ 'recorded_by',
+ 'scheme_management',
+ 'scheme_name',
+ 'permit',
+ 'construction_year',
+ 'extraction_type',
+ 'extraction_type_group',
+ 'extraction_type_class',
+ 'management',
+ 'management_group',
+ 'payment',
+ 'payment_type',
+ 'water_quality',
+ 'quality_group',
+ 'quantity',
+ 'quantity_group',
+ 'source',
+ 'source_type',
+ 'source_class',
+ 'waterpoint_type',
+ 'waterpoint_type_group']
+</code></pre></div></div>
+
+<p>We see a high number of unique values in some categorical variables, such as waterpoint names (wpt_name), scheme names (scheme_name) and subvillage.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span> <span class="o">=</span> <span class="n">train</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">.</span><span class="n">describe</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>amount_tsh</th>
+      <th>gps_height</th>
+      <th>longitude</th>
+      <th>latitude</th>
+      <th>num_private</th>
+      <th>region_code</th>
+      <th>district_code</th>
+      <th>population</th>
+      <th>construction_year</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+      <td>5.940000e+04</td>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+      <td>59400.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>317.650385</td>
+      <td>668.297239</td>
+      <td>34.077427</td>
+      <td>-5.706033e+00</td>
+      <td>0.474141</td>
+      <td>15.297003</td>
+      <td>5.629747</td>
+      <td>179.909983</td>
+      <td>1300.652475</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>2997.574558</td>
+      <td>693.116350</td>
+      <td>6.567432</td>
+      <td>2.946019e+00</td>
+      <td>12.236230</td>
+      <td>17.587406</td>
+      <td>9.633649</td>
+      <td>471.482176</td>
+      <td>951.620547</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>0.000000</td>
+      <td>-90.000000</td>
+      <td>0.000000</td>
+      <td>-1.164944e+01</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>33.090347</td>
+      <td>-8.540621e+00</td>
+      <td>0.000000</td>
+      <td>5.000000</td>
+      <td>2.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>0.000000</td>
+      <td>369.000000</td>
+      <td>34.908743</td>
+      <td>-5.021597e+00</td>
+      <td>0.000000</td>
+      <td>12.000000</td>
+      <td>3.000000</td>
+      <td>25.000000</td>
+      <td>1986.000000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>20.000000</td>
+      <td>1319.250000</td>
+      <td>37.178387</td>
+      <td>-3.326156e+00</td>
+      <td>0.000000</td>
+      <td>17.000000</td>
+      <td>5.000000</td>
+      <td>215.000000</td>
+      <td>2004.000000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>350000.000000</td>
+      <td>2770.000000</td>
+      <td>40.345193</td>
+      <td>-2.000000e-08</td>
+      <td>1776.000000</td>
+      <td>99.000000</td>
+      <td>80.000000</td>
+      <td>30500.000000</td>
+      <td>2013.000000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Some observations are missing longitudinal data</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="n">merged</span><span class="p">[</span><span class="s">'longitude'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">].</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(1812, 40)
+</code></pre></div></div>
+
+<p>Classes are slightly umbalanced, but we believe over/undersampling is not necessary for predicting.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="n">merged</span><span class="p">[</span><span class="s">'status_group'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">sort_values</span><span class="p">())</span>
+<span class="n">merged</span><span class="p">[</span><span class="s">'status_group'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">sort_values</span><span class="p">().</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span> <span class="o">=</span> <span class="s">'barh'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>functional needs repair     4317
+non functional             22824
+functional                 32259
+Name: status_group, dtype: int64
+
+
+
+
+
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x1225ba3d0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_15_2.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="s">'Unique values for each categorical variable:'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">train</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span> <span class="o">=</span> <span class="s">'object'</span><span class="p">):</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">[</span><span class="n">x</span><span class="p">].</span><span class="n">nunique</span><span class="p">(),</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">' -&gt; '</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Unique values for each categorical variable:
+date_recorded -&gt; 356
+funder -&gt; 1897
+installer -&gt; 2145
+wpt_name -&gt; 37400
+basin -&gt; 9
+subvillage -&gt; 19287
+region -&gt; 21
+lga -&gt; 125
+ward -&gt; 2092
+public_meeting -&gt; 2
+recorded_by -&gt; 1
+scheme_management -&gt; 12
+scheme_name -&gt; 2696
+permit -&gt; 2
+extraction_type -&gt; 18
+extraction_type_group -&gt; 13
+extraction_type_class -&gt; 7
+management -&gt; 12
+management_group -&gt; 5
+payment -&gt; 7
+payment_type -&gt; 7
+water_quality -&gt; 8
+quality_group -&gt; 6
+quantity -&gt; 5
+quantity_group -&gt; 5
+source -&gt; 10
+source_type -&gt; 7
+source_class -&gt; 3
+waterpoint_type -&gt; 7
+waterpoint_type_group -&gt; 6
+</code></pre></div></div>
+
+<h3 id="exploratory-data-analysis">Exploratory data analysis</h3>
+
+<p>We’ll narrow the exploratory analysis by considering waterpumps in need of repair as functioning waterpumps.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'functional_or_not'</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="s">'status_group'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s">'functional'</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s">'functional'</span> <span class="k">else</span> <span class="s">'not functional'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">geopandas</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">location</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">reset_index</span><span class="p">()[[</span><span class="s">'id'</span><span class="p">,</span> <span class="s">'region'</span><span class="p">,</span> <span class="s">'latitude'</span><span class="p">,</span> <span class="s">'longitude'</span><span class="p">,</span><span class="s">'status_group'</span><span class="p">,</span><span class="s">'functional_or_not'</span><span class="p">]]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">to_drop</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="n">location</span><span class="p">[</span><span class="s">'longitude'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">].</span><span class="n">index</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">location</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="n">to_drop</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="p">.</span><span class="n">GeoDataFrame</span><span class="p">(</span>
+    <span class="n">location</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="n">geopandas</span><span class="p">.</span><span class="n">points_from_xy</span><span class="p">(</span><span class="n">location</span><span class="p">.</span><span class="n">longitude</span><span class="p">,</span> <span class="n">location</span><span class="p">.</span><span class="n">latitude</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">world</span> <span class="o">=</span> <span class="n">geopandas</span><span class="p">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">geopandas</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">get_path</span><span class="p">(</span><span class="s">'naturalearth_lowres'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="nb">set</span><span class="p">(</span><span class="n">rc</span><span class="o">=</span><span class="p">{</span><span class="s">'figure.figsize'</span><span class="p">:(</span><span class="mf">11.7</span><span class="p">,</span><span class="mf">8.27</span><span class="p">)},</span> <span class="n">palette</span> <span class="o">=</span> <span class="s">'deep'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">world</span><span class="p">[</span><span class="s">"tanz"</span><span class="p">]</span> <span class="o">=</span> <span class="n">world</span><span class="p">.</span><span class="n">name</span><span class="p">.</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s">'Tanzania'</span> <span class="k">else</span> <span class="n">np</span><span class="p">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">world</span><span class="p">[</span><span class="n">world</span><span class="p">[</span><span class="s">'continent'</span><span class="p">]</span> <span class="o">==</span> <span class="s">'Africa'</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s">"white"</span><span class="p">,</span> <span class="n">edgecolor</span> <span class="o">=</span> <span class="s">'black'</span><span class="p">)</span>
+<span class="n">world</span><span class="p">.</span><span class="n">dropna</span><span class="p">().</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="s">"name"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x12baf5390&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_27_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ax</span> <span class="o">=</span> <span class="n">world</span><span class="p">[</span><span class="n">world</span><span class="p">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">'Tanzania'</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">color</span><span class="o">=</span><span class="s">'white'</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">'black'</span><span class="p">)</span>
+
+<span class="n">gdf</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">'black'</span><span class="p">,</span> <span class="n">markersize</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Tanzania'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_28_0.png" alt="png" /></p>
+
+<p>Functioning pumps in blue, those not functioning are in red.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ax</span> <span class="o">=</span> <span class="n">world</span><span class="p">[</span><span class="n">world</span><span class="p">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">'Tanzania'</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">color</span><span class="o">=</span><span class="s">'white'</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">'black'</span><span class="p">)</span>
+
+<span class="n">gdf</span><span class="p">[</span><span class="n">gdf</span><span class="p">[</span><span class="s">'functional_or_not'</span><span class="p">]</span> <span class="o">==</span> <span class="s">'functional'</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">'blue'</span><span class="p">,</span> <span class="n">markersize</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="n">gdf</span><span class="p">[</span><span class="n">gdf</span><span class="p">[</span><span class="s">'functional_or_not'</span><span class="p">]</span> <span class="o">==</span> <span class="s">'not functional'</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">'red'</span><span class="p">,</span> <span class="n">markersize</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Tanzania'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_30_0.png" alt="png" /></p>
+
+<h4 id="waterpump-building-has-increased-over-the-years-peaking-in-2010">Waterpump building has increased over the years, peaking in 2010.</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">g</span> <span class="o">=</span> <span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'construction_year'</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">'blue'</span><span class="p">,</span> <span class="n">saturation</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'construction_year != 0'</span><span class="p">))</span>
+<span class="n">g</span><span class="p">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">labelrotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_32_0.png" alt="png" /></p>
+
+<p>Years since built appears to be a factor for waterpump functioning, as newer pumps are the ones in better shape.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">p</span> <span class="o">=</span> <span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'construction_year'</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'construction_year != 0'</span><span class="p">))</span>
+<span class="n">p</span><span class="p">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">labelrotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_34_0.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">new</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">groupby</span><span class="p">([</span><span class="s">'construction_year'</span><span class="p">,</span><span class="s">'functional_or_not'</span><span class="p">])[</span><span class="s">'amount_tsh'</span><span class="p">].</span><span class="n">mean</span><span class="p">()[</span><span class="mi">3</span><span class="p">:].</span><span class="n">reset_index</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>There also appears to be a relationship between the amount water available to waterpoint and it’s functionality. Waterpumps with higher capacity tend to break less.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">lineplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'construction_year'</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="s">'amount_tsh'</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">new</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x123d156d0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_37_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">new2</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">groupby</span><span class="p">([</span><span class="s">'construction_year'</span><span class="p">,</span><span class="s">'functional_or_not'</span><span class="p">])[</span><span class="s">'gps_height'</span><span class="p">].</span><span class="n">mean</span><span class="p">()[</span><span class="mi">3</span><span class="p">:].</span><span class="n">reset_index</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Also waterpoints with larger well depth show more functioning. May be higher depth requires higher waterpump quality.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">lineplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'construction_year'</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="s">'gps_height'</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">new2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x105c51650&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_40_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="s">'Construction year == 0:'</span><span class="p">,</span><span class="n">merged</span><span class="p">[</span><span class="n">merged</span><span class="p">[</span><span class="s">'construction_year'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Construction year == 0: 20709
+</code></pre></div></div>
+
+<p>The Department of Water Engineer (DWE) is the main waterpump installer in Tanzania.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">head</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DWE                   17402
+Government             1825
+RWE                    1206
+Commu                  1060
+DANIDA                 1050
+KKKT                    898
+Hesawa                  840
+0                       777
+TCRS                    707
+Central government      622
+CES                     610
+Community               553
+DANID                   552
+District Council        551
+HESAWA                  539
+Name: installer, dtype: int64
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span> <span class="o">=</span> <span class="s">'bar'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x11cb3af90&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_44_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">big_installers</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">index</span><span class="p">[:</span><span class="mi">10</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">merged</span><span class="p">[</span><span class="s">'installer2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">big_installers</span> <span class="k">else</span> <span class="s">'Other'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">inst</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">groupby</span><span class="p">([</span><span class="s">'installer2'</span><span class="p">,</span><span class="s">'functional_or_not'</span><span class="p">]).</span><span class="n">size</span><span class="p">().</span><span class="n">reset_index</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">inst</span><span class="p">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="s">'count'</span><span class="p">},</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">inst</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="n">inst</span><span class="p">.</span><span class="n">loc</span><span class="p">[</span><span class="n">inst</span><span class="p">[</span><span class="s">'installer2'</span><span class="p">]</span> <span class="o">==</span> <span class="s">'Other'</span><span class="p">].</span><span class="n">index</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Data shows that government installed waterpumps tend to break.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'installer2'</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="s">'count'</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span> <span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">inst</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x11e376fd0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_50_1.png" alt="png" /></p>
+
+<p>The Government of Tanzania is the main waterpoint infrastructure funder.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'funder'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">head</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Government Of Tanzania    9084
+Danida                    3114
+Hesawa                    2202
+Rwssp                     1374
+World Bank                1349
+Kkkt                      1287
+World Vision              1246
+Unicef                    1057
+Tasaf                      877
+District Council           843
+Dhv                        829
+Private Individual         826
+Dwsp                       811
+0                          777
+Norad                      765
+Name: funder, dtype: int64
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'funder'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span> <span class="o">=</span> <span class="s">'bar'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x120bc5190&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_53_1.png" alt="png" /></p>
+
+<p>A cause for non-functioning waterpumps is waterpoints being dry.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">factorplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s">"quantity"</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span><span class="p">,</span> <span class="n">kind</span> <span class="o">=</span> <span class="s">'count'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">merged</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/seaborn/categorical.py:3669: UserWarning: The `factorplot` function has been renamed to `catplot`. The original name will be removed in a future release. Please update your code. Note that the default `kind` in `factorplot` (`'point'`) has changed `'strip'` in `catplot`.
+  warnings.warn(msg)
+
+
+
+
+
+&lt;seaborn.axisgrid.FacetGrid at 0x120f82ed0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_55_2.png" alt="png" /></p>
+
+<p>Population data shows a non-trivial quantity of outliers. 90% of waterpumps provide water for less than 500-individual groups.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">[</span><span class="s">'population'</span><span class="p">].</span><span class="n">quantile</span><span class="p">([</span><span class="mf">0.25</span><span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span><span class="mf">0.99</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.25       0.0
+0.50      25.0
+0.75     215.0
+0.90     453.0
+0.99    2000.0
+Name: population, dtype: float64
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="s">'population'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x1210a9dd0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_58_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="s">'population'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'population &lt; 300'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x122bfe0d0&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_59_1.png" alt="png" /></p>
+
+<p>Most common type of waterpoint is the communal standpipe, followed by hand pump waterpoints.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">g</span> <span class="o">=</span> <span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'waterpoint_type'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">)</span>
+<span class="n">g</span><span class="p">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelrotation</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_61_0.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">by_wpt</span> <span class="o">=</span> <span class="n">merged</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'construction_year != 0'</span><span class="p">).</span><span class="n">groupby</span><span class="p">([</span><span class="s">'waterpoint_type'</span><span class="p">,</span><span class="s">'construction_year'</span><span class="p">]).</span><span class="n">size</span><span class="p">().</span><span class="n">reset_index</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">by_wpt</span><span class="p">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="s">'count'</span><span class="p">},</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Types of waterpoints installed throughout time.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">lineplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'construction_year'</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="s">'count'</span><span class="p">,</span> <span class="n">hue</span> <span class="o">=</span> <span class="s">'waterpoint_type'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">by_wpt</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x121021350&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_65_1.png" alt="png" /></p>
+
+<p>Next chart shows that cattle trough and multiple communal standpipes are used to provide water to large populations.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">merged</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'population &lt; 500'</span><span class="p">).</span><span class="n">groupby</span><span class="p">(</span><span class="s">'waterpoint_type'</span><span class="p">)[</span><span class="s">'population'</span><span class="p">].</span><span class="n">mean</span><span class="p">().</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span> <span class="o">=</span> <span class="bp">False</span><span class="p">).</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span> <span class="o">=</span> <span class="s">'bar'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x11bf21050&gt;
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_67_1.png" alt="png" /></p>
+
+<p>Multiple communal standpipes exhibit more non-functional than functional units.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="s">'waterpoint_type'</span><span class="p">,</span><span class="n">hue</span> <span class="o">=</span> <span class="s">'functional_or_not'</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">merged</span><span class="p">).</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelrotation</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/assets/images/output_69_0.png" alt="png" /></p>
+
+<h3 id="modelling-and-predicting">Modelling and predicting</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span> <span class="o">=</span> <span class="n">train</span><span class="p">.</span><span class="n">copy</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span> <span class="o">=</span> <span class="n">train2</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span> <span class="o">=</span> <span class="n">train2</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'longitude != 0'</span><span class="p">)</span>
+<span class="n">train2</span> <span class="o">=</span> <span class="n">train2</span><span class="p">.</span><span class="n">query</span><span class="p">(</span><span class="s">'population &lt; 1000'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train_labels</span> <span class="o">=</span> <span class="n">train2</span><span class="p">[</span><span class="s">'status_group'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span> <span class="o">=</span> <span class="n">train2</span><span class="p">.</span><span class="n">iloc</span><span class="p">[:,:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span><span class="p">.</span><span class="n">head</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>amount_tsh</th>
+      <th>date_recorded</th>
+      <th>funder</th>
+      <th>gps_height</th>
+      <th>installer</th>
+      <th>longitude</th>
+      <th>latitude</th>
+      <th>wpt_name</th>
+      <th>num_private</th>
+      <th>basin</th>
+      <th>subvillage</th>
+      <th>region</th>
+      <th>region_code</th>
+      <th>district_code</th>
+      <th>lga</th>
+      <th>ward</th>
+      <th>population</th>
+      <th>public_meeting</th>
+      <th>recorded_by</th>
+      <th>scheme_management</th>
+      <th>scheme_name</th>
+      <th>permit</th>
+      <th>construction_year</th>
+      <th>extraction_type</th>
+      <th>extraction_type_group</th>
+      <th>extraction_type_class</th>
+      <th>management</th>
+      <th>management_group</th>
+      <th>payment</th>
+      <th>payment_type</th>
+      <th>water_quality</th>
+      <th>quality_group</th>
+      <th>quantity</th>
+      <th>quantity_group</th>
+      <th>source</th>
+      <th>source_type</th>
+      <th>source_class</th>
+      <th>waterpoint_type</th>
+      <th>waterpoint_type_group</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>69572</th>
+      <td>6000.0</td>
+      <td>2011-03-14</td>
+      <td>Roman</td>
+      <td>1390</td>
+      <td>Roman</td>
+      <td>34.938093</td>
+      <td>-9.856322</td>
+      <td>none</td>
+      <td>0</td>
+      <td>Lake Nyasa</td>
+      <td>Mnyusi B</td>
+      <td>Iringa</td>
+      <td>11</td>
+      <td>5</td>
+      <td>Ludewa</td>
+      <td>Mundindi</td>
+      <td>109</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>Roman</td>
+      <td>False</td>
+      <td>1999</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>pay annually</td>
+      <td>annually</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>enough</td>
+      <td>enough</td>
+      <td>spring</td>
+      <td>spring</td>
+      <td>groundwater</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>8776</th>
+      <td>0.0</td>
+      <td>2013-03-06</td>
+      <td>Grumeti</td>
+      <td>1399</td>
+      <td>GRUMETI</td>
+      <td>34.698766</td>
+      <td>-2.147466</td>
+      <td>Zahanati</td>
+      <td>0</td>
+      <td>Lake Victoria</td>
+      <td>Nyamara</td>
+      <td>Mara</td>
+      <td>20</td>
+      <td>2</td>
+      <td>Serengeti</td>
+      <td>Natta</td>
+      <td>280</td>
+      <td>NaN</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>Other</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>2010</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>wug</td>
+      <td>user-group</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>insufficient</td>
+      <td>insufficient</td>
+      <td>rainwater harvesting</td>
+      <td>rainwater harvesting</td>
+      <td>surface</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>34310</th>
+      <td>25.0</td>
+      <td>2013-02-25</td>
+      <td>Lottery Club</td>
+      <td>686</td>
+      <td>World vision</td>
+      <td>37.460664</td>
+      <td>-3.821329</td>
+      <td>Kwa Mahundi</td>
+      <td>0</td>
+      <td>Pangani</td>
+      <td>Majengo</td>
+      <td>Manyara</td>
+      <td>21</td>
+      <td>4</td>
+      <td>Simanjiro</td>
+      <td>Ngorika</td>
+      <td>250</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>Nyumba ya mungu pipe scheme</td>
+      <td>True</td>
+      <td>2009</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>pay per bucket</td>
+      <td>per bucket</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>enough</td>
+      <td>enough</td>
+      <td>dam</td>
+      <td>dam</td>
+      <td>surface</td>
+      <td>communal standpipe multiple</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>67743</th>
+      <td>0.0</td>
+      <td>2013-01-28</td>
+      <td>Unicef</td>
+      <td>263</td>
+      <td>UNICEF</td>
+      <td>38.486161</td>
+      <td>-11.155298</td>
+      <td>Zahanati Ya Nanyumbu</td>
+      <td>0</td>
+      <td>Ruvuma / Southern Coast</td>
+      <td>Mahakamani</td>
+      <td>Mtwara</td>
+      <td>90</td>
+      <td>63</td>
+      <td>Nanyumbu</td>
+      <td>Nanyumbu</td>
+      <td>58</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>VWC</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>1986</td>
+      <td>submersible</td>
+      <td>submersible</td>
+      <td>submersible</td>
+      <td>vwc</td>
+      <td>user-group</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>dry</td>
+      <td>dry</td>
+      <td>machine dbh</td>
+      <td>borehole</td>
+      <td>groundwater</td>
+      <td>communal standpipe multiple</td>
+      <td>communal standpipe</td>
+    </tr>
+    <tr>
+      <th>19728</th>
+      <td>0.0</td>
+      <td>2011-07-13</td>
+      <td>Action In A</td>
+      <td>0</td>
+      <td>Artisan</td>
+      <td>31.130847</td>
+      <td>-1.825359</td>
+      <td>Shuleni</td>
+      <td>0</td>
+      <td>Lake Victoria</td>
+      <td>Kyanyamisa</td>
+      <td>Kagera</td>
+      <td>18</td>
+      <td>1</td>
+      <td>Karagwe</td>
+      <td>Nyakasimbi</td>
+      <td>0</td>
+      <td>True</td>
+      <td>GeoData Consultants Ltd</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>True</td>
+      <td>0</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>gravity</td>
+      <td>other</td>
+      <td>other</td>
+      <td>never pay</td>
+      <td>never pay</td>
+      <td>soft</td>
+      <td>good</td>
+      <td>seasonal</td>
+      <td>seasonal</td>
+      <td>rainwater harvesting</td>
+      <td>rainwater harvesting</td>
+      <td>surface</td>
+      <td>communal standpipe</td>
+      <td>communal standpipe</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span><span class="p">[</span><span class="s">'district_code'</span><span class="p">]</span> <span class="o">=</span> <span class="n">train2</span><span class="p">[</span><span class="s">'district_code'</span><span class="p">].</span><span class="n">astype</span><span class="p">(</span><span class="s">'category'</span><span class="p">)</span>
+<span class="n">train2</span><span class="p">[</span><span class="s">'construction_year'</span><span class="p">]</span> <span class="o">=</span> <span class="n">train2</span><span class="p">[</span><span class="s">'construction_year'</span><span class="p">].</span><span class="n">astype</span><span class="p">(</span><span class="s">'category'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>We drop high cardinality variables.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train2</span><span class="p">.</span><span class="n">drop</span><span class="p">([</span><span class="s">'date_recorded'</span><span class="p">,</span><span class="s">'wpt_name'</span><span class="p">,</span> <span class="s">'subvillage'</span><span class="p">,</span> <span class="s">'scheme_name'</span><span class="p">,</span><span class="s">'ward'</span><span class="p">,</span><span class="s">'lga'</span><span class="p">,</span> <span class="s">'num_private'</span><span class="p">,</span><span class="s">'scheme_management'</span><span class="p">,</span>
+             <span class="s">'region_code'</span><span class="p">,</span><span class="s">'recorded_by'</span><span class="p">,</span> <span class="s">'quantity_group'</span><span class="p">,</span><span class="s">'extraction_type'</span><span class="p">,</span>
+             <span class="s">'extraction_type_class'</span><span class="p">,</span> <span class="s">'waterpoint_type_group'</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">train2</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_size</span> <span class="o">=</span> <span class="mf">0.33</span><span class="p">,</span> <span class="n">random_state</span> <span class="o">=</span> <span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(37451, 25)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(18447, 25)
+</code></pre></div></div>
+
+<p>After splitting, we reduce cardinality on some columns believed to be useful.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">big_funders</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="s">'funder'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">index</span><span class="p">[:</span><span class="mi">10</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">X_train</span><span class="p">[</span><span class="s">'funder'</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="s">'funder'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">big_funders</span> <span class="k">else</span> <span class="s">'Other'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/ipykernel_launcher.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">big_inst</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="n">value_counts</span><span class="p">().</span><span class="n">index</span><span class="p">[:</span><span class="mi">10</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">X_train</span><span class="p">[</span><span class="s">'installer'</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">big_inst</span> <span class="k">else</span> <span class="s">'Other'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/ipykernel_launcher.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(37451, 25)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(18447, 25)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#big_funders = X_test['funder'].value_counts().index[:10].tolist()
+</span><span class="n">X_test</span><span class="p">[</span><span class="s">'funder'</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="s">'funder'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">big_funders</span> <span class="k">else</span> <span class="s">'Other'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/ipykernel_launcher.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#big_inst = X_test['installer'].value_counts().index[:10].tolist()
+</span><span class="n">X_test</span><span class="p">[</span><span class="s">'installer'</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="s">'installer'</span><span class="p">].</span><span class="nb">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">big_inst</span> <span class="k">else</span> <span class="s">'Other'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/ipykernel_launcher.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(37451, 25)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(18447, 25)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(37451, 226)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(18447, 226)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">accuracy_score</span>
+</code></pre></div></div>
+<p>We first use logistic regression for predicting, settling our baseline model.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clf</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">().</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//anaconda3/lib/python3.7/site-packages/sklearn/linear_model/_logistic.py:940: ConvergenceWarning: lbfgs failed to converge (status=1):
+STOP: TOTAL NO. of ITERATIONS REACHED LIMIT.
+
+Increase the number of iterations (max_iter) or scale the data as shown in:
+    https://scikit-learn.org/stable/modules/preprocessing.html
+Please also refer to the documentation for alternative solver options:
+    https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
+  extra_warning_msg=_LOGISTIC_SOLVER_CONVERGENCE_MSG)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">preds</span> <span class="o">=</span> <span class="n">clf</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>array([[8179,    0, 1867],
+       [ 973,    0,  282],
+       [3190,    0, 3956]])
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.6578305415514718
+</code></pre></div></div>
+
+<h5 id="we-chose-random-forest-classifier-as-it-provides-some-level-of-feature-importance">We chose Random Forest Classifier as it provides some level of feature importance.</h5>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+</code></pre></div></div>
+<p>parameters = {‘n_estimators’:(100,150,200,250,300)}
+rfc = RandomForestClassifier()
+clf = GridSearchCV(rfc, parameters)
+clf.fit(X_train, y_train)
+After running a GridSearch we found that the optimal number of estimators for Random Forest Classifier was 200.
+RandomForestClassifier(bootstrap=True, class_weight=None, criterion=’gini’,
+                       max_depth=None, max_features=’auto’, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=200,
+                       n_jobs=None, oob_score=False, random_state=None,
+                       verbose=0, warm_start=False)</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clf</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span> <span class="o">=</span> <span class="mi">200</span><span class="p">).</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">preds</span> <span class="o">=</span> <span class="n">clf</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>array([[8818,  318,  910],
+       [ 629,  423,  203],
+       [1431,  128, 5587]])
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.8038163387000596
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">features</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">(),</span><span class="n">clf</span><span class="p">.</span><span class="n">feature_importances_</span><span class="p">)),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s">'feature'</span><span class="p">,</span><span class="s">'importance'</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">features</span><span class="p">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s">'importance'</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="bp">False</span><span class="p">).</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>feature</th>
+      <th>importance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2</th>
+      <td>longitude</td>
+      <td>0.127886</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>latitude</td>
+      <td>0.127557</td>
+    </tr>
+    <tr>
+      <th>194</th>
+      <td>quantity_dry</td>
+      <td>0.070492</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>gps_height</td>
+      <td>0.061161</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>population</td>
+      <td>0.041358</td>
+    </tr>
+    <tr>
+      <th>195</th>
+      <td>quantity_enough</td>
+      <td>0.025841</td>
+    </tr>
+    <tr>
+      <th>225</th>
+      <td>waterpoint_type_other</td>
+      <td>0.024601</td>
+    </tr>
+    <tr>
+      <th>142</th>
+      <td>extraction_type_group_other</td>
+      <td>0.024012</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>amount_tsh</td>
+      <td>0.018867</td>
+    </tr>
+    <tr>
+      <th>196</th>
+      <td>quantity_insufficient</td>
+      <td>0.013362</td>
+    </tr>
+    <tr>
+      <th>220</th>
+      <td>waterpoint_type_communal standpipe</td>
+      <td>0.011357</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>funder_Other</td>
+      <td>0.009137</td>
+    </tr>
+    <tr>
+      <th>223</th>
+      <td>waterpoint_type_hand pump</td>
+      <td>0.009076</td>
+    </tr>
+    <tr>
+      <th>175</th>
+      <td>payment_type_never pay</td>
+      <td>0.008261</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>installer_Other</td>
+      <td>0.007916</td>
+    </tr>
+    <tr>
+      <th>221</th>
+      <td>waterpoint_type_communal standpipe multiple</td>
+      <td>0.007782</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>funder_Government Of Tanzania</td>
+      <td>0.007587</td>
+    </tr>
+    <tr>
+      <th>156</th>
+      <td>management_vwc</td>
+      <td>0.007440</td>
+    </tr>
+    <tr>
+      <th>166</th>
+      <td>payment_never pay</td>
+      <td>0.007315</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>installer_DWE</td>
+      <td>0.007209</td>
+    </tr>
+    <tr>
+      <th>137</th>
+      <td>extraction_type_group_gravity</td>
+      <td>0.007152</td>
+    </tr>
+    <tr>
+      <th>80</th>
+      <td>permit_True</td>
+      <td>0.006863</td>
+    </tr>
+    <tr>
+      <th>141</th>
+      <td>extraction_type_group_nira/tanira</td>
+      <td>0.006635</td>
+    </tr>
+    <tr>
+      <th>79</th>
+      <td>permit_False</td>
+      <td>0.006505</td>
+    </tr>
+    <tr>
+      <th>197</th>
+      <td>quantity_seasonal</td>
+      <td>0.006108</td>
+    </tr>
+    <tr>
+      <th>60</th>
+      <td>district_code_3</td>
+      <td>0.005787</td>
+    </tr>
+    <tr>
+      <th>78</th>
+      <td>public_meeting_True</td>
+      <td>0.005647</td>
+    </tr>
+    <tr>
+      <th>58</th>
+      <td>district_code_1</td>
+      <td>0.005548</td>
+    </tr>
+    <tr>
+      <th>215</th>
+      <td>source_type_spring</td>
+      <td>0.005241</td>
+    </tr>
+    <tr>
+      <th>59</th>
+      <td>district_code_2</td>
+      <td>0.005181</td>
+    </tr>
+    <tr>
+      <th>61</th>
+      <td>district_code_4</td>
+      <td>0.004441</td>
+    </tr>
+    <tr>
+      <th>77</th>
+      <td>public_meeting_False</td>
+      <td>0.004414</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>basin_Internal</td>
+      <td>0.004393</td>
+    </tr>
+    <tr>
+      <th>132</th>
+      <td>construction_year_2010</td>
+      <td>0.004374</td>
+    </tr>
+    <tr>
+      <th>187</th>
+      <td>water_quality_unknown</td>
+      <td>0.004373</td>
+    </tr>
+    <tr>
+      <th>81</th>
+      <td>construction_year_0</td>
+      <td>0.004346</td>
+    </tr>
+    <tr>
+      <th>146</th>
+      <td>extraction_type_group_submersible</td>
+      <td>0.004253</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>region_Iringa</td>
+      <td>0.004228</td>
+    </tr>
+    <tr>
+      <th>190</th>
+      <td>quality_group_good</td>
+      <td>0.004167</td>
+    </tr>
+    <tr>
+      <th>186</th>
+      <td>water_quality_soft</td>
+      <td>0.003968</td>
+    </tr>
+    <tr>
+      <th>207</th>
+      <td>source_spring</td>
+      <td>0.003929</td>
+    </tr>
+    <tr>
+      <th>165</th>
+      <td>management_group_user-group</td>
+      <td>0.003833</td>
+    </tr>
+    <tr>
+      <th>172</th>
+      <td>payment_unknown</td>
+      <td>0.003716</td>
+    </tr>
+    <tr>
+      <th>202</th>
+      <td>source_machine dbh</td>
+      <td>0.003714</td>
+    </tr>
+    <tr>
+      <th>209</th>
+      <td>source_type_borehole</td>
+      <td>0.003690</td>
+    </tr>
+    <tr>
+      <th>174</th>
+      <td>payment_type_monthly</td>
+      <td>0.003612</td>
+    </tr>
+    <tr>
+      <th>170</th>
+      <td>payment_pay per bucket</td>
+      <td>0.003500</td>
+    </tr>
+    <tr>
+      <th>179</th>
+      <td>payment_type_unknown</td>
+      <td>0.003479</td>
+    </tr>
+    <tr>
+      <th>131</th>
+      <td>construction_year_2009</td>
+      <td>0.003443</td>
+    </tr>
+    <tr>
+      <th>130</th>
+      <td>construction_year_2008</td>
+      <td>0.003428</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+  </div><a class="u-url" href="/jekyll/update/2020/05/04/DataDriven.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Carruza blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Carruza blog</li><li><a class="u-email" href="mailto:your-email@example.com">your-email@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
